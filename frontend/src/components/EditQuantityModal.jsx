@@ -7,12 +7,13 @@ export default function EditQuantityModal({ product, onClose, onQuantityUpdated 
 
   const handleSave = async () => {
     setError('')
+    const finalQty = quantity === '' ? 0 : quantity
     setSubmitting(true)
     try {
       const res = await fetch(`/api/products/${product.id}/quantity`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity }),
+        body: JSON.stringify({ quantity: finalQty }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to update quantity')
@@ -43,7 +44,7 @@ export default function EditQuantityModal({ product, onClose, onQuantityUpdated 
               type="number"
               min="0"
               value={quantity}
-              onChange={e => setQuantity(Math.max(0, parseInt(e.target.value) || 0))}
+              onChange={e => { const val = e.target.value; setQuantity(val === '' ? '' : Math.max(0, parseInt(val) || 0)); }}
               className="w-20 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <button

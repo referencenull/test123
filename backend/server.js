@@ -1,12 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const db = require('./db');
 
 const app = express();
 const PORT = 3001;
 
-app.use(cors({ origin: 'http://localhost:5173' }));
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:3001'] }));
+
+// Serve built frontend static files
+const frontendDist = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDist));
 app.use(express.json());
 
 const limiter = rateLimit({
@@ -15,13 +20,12 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use('/api', limiter);
 
-app.get('/api/health', (req, res) => {
+app.get('/api/health', limiter, (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/products', (req, res) => {
+app.get('/api/products', limiter, (req, res) => {
   try {
     const { search, category, sort } = req.query;
     let query = 'SELECT * FROM products WHERE 1=1';
@@ -42,7 +46,7 @@ app.get('/api/products', (req, res) => {
       quantity: 'quantity ASC',
       category: 'category ASC',
     };
-    // Only values from sortMap (a fixed whitelist) are ever interpolated — no injection possible
+    // Values are taken from a fixed whitelist (sortMap) preventing SQL injection
     const orderClause = sortMap[sort] || 'created_at DESC';
     query += ` ORDER BY ${orderClause}`;
 
@@ -53,7 +57,7 @@ app.get('/api/products', (req, res) => {
   }
 });
 
-app.post('/api/products', (req, res) => {
+app.post('/api/products', limiter, (req, res) => {
   try {
     const { name, category, price, quantity, sku, description } = req.body;
     if (!name || !category || price == null || quantity == null || !sku) {
@@ -73,7 +77,7 @@ app.post('/api/products', (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/products/:id', limiter, (req, res) => {
   try {
     const { id } = req.params;
     const product = db.prepare('SELECT * FROM products WHERE id = ?').get(id);
@@ -85,7 +89,7 @@ app.delete('/api/products/:id', (req, res) => {
   }
 });
 
-app.patch('/api/products/:id/quantity', (req, res) => {
+app.patch('/api/products/:id/quantity', limiter, (req, res) => {
   try {
     const { id } = req.params;
     const { quantity } = req.body;
@@ -100,6 +104,11 @@ app.patch('/api/products/:id/quantity', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// SPA fallback: serve index.html for all non-API routes
+app.get('*', limiter, (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
 });
 
 app.listen(PORT, () => {

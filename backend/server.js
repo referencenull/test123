@@ -33,7 +33,9 @@ app.get('/api/products', (req, res) => {
       quantity: 'quantity ASC',
       category: 'category ASC',
     };
-    query += ` ORDER BY ${sortMap[sort] || 'created_at DESC'}`;
+    // Only values from sortMap (a fixed whitelist) are ever interpolated — no injection possible
+    const orderClause = sortMap[sort] || 'created_at DESC';
+    query += ` ORDER BY ${orderClause}`;
 
     const products = db.prepare(query).all(...params);
     res.json(products);

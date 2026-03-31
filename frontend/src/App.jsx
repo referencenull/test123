@@ -12,7 +12,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [sortBy, setSortBy] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState({ product: null })
+  const [showEditModal, setShowEditModal] = useState(null)
   const [toasts, setToasts] = useState([])
 
   const categories = ['All', 'Electronics', 'Clothing', 'Food & Beverages', 'Sports', 'Home & Garden']
@@ -65,7 +65,7 @@ export default function App() {
 
   const handleQuantityUpdated = (updated) => {
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p))
-    setShowEditModal({ product: null })
+    setShowEditModal(null)
     addToast('Quantity updated successfully')
   }
 
@@ -144,7 +144,7 @@ export default function App() {
           <ProductGrid
             products={products}
             onDelete={handleDelete}
-            onEditQty={(product) => setShowEditModal({ product })}
+            onEditQty={(product) => setShowEditModal(product)}
           />
         )}
       </main>
@@ -156,10 +156,10 @@ export default function App() {
         />
       )}
 
-      {showEditModal.product && (
+      {showEditModal && (
         <EditQuantityModal
-          product={showEditModal.product}
-          onClose={() => setShowEditModal({ product: null })}
+          product={showEditModal}
+          onClose={() => setShowEditModal(null)}
           onQuantityUpdated={handleQuantityUpdated}
         />
       )}
